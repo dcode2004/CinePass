@@ -55,7 +55,13 @@ const movieSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-movieSchema.index({ title: 'text', description: 'text' });
+// `language_override: 'none'` prevents MongoDB from treating the document's
+// `language` field (e.g. 'Telugu', 'Tamil') as a text-index language override,
+// which would otherwise throw "language override unsupported".
+movieSchema.index(
+  { title: 'text', description: 'text' },
+  { language_override: 'none' }
+);
 
 const Movie = mongoose.model('Movie', movieSchema);
 export default Movie;
