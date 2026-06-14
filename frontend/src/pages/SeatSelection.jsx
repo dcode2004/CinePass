@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { showService } from '../services/show.service.js';
 import { bookingService } from '../services/booking.service.js';
+import { useShowSeats } from '../hooks/useShowSeats.js';
 import SeatMap from '../components/SeatMap.jsx';
 import Loader from '../components/Loader.jsx';
 import { formatDate, formatCurrency } from '../utils/helpers.js';
@@ -15,6 +16,7 @@ const SeatSelection = () => {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     showService.getById(showId)
@@ -23,7 +25,26 @@ const SeatSelection = () => {
       .finally(() => setLoading(false));
   }, [showId]);
 
+  // Apply realtime seat updates broadcast by the server
+  const handleSeatUpdate = useCallback((payload) => {
+    setShow((prev) =>
+      prev ? { ...prev, bookedSeats: payload.bookedSeats, availableSeats: payload.availableSeats } : prev
+    );
+
+    // Prevent stale selections: drop any selected seat that just got booked elsewhere
+    setSelectedSeats((prev) => {
+      const conflicting = prev.filter((s) => payload.bookedSeats.includes(s));
+      if (conflicting.length > 0) {
+        setNotice(`Seat(s) ${conflicting.join(', ')} were just booked by someone else and removed from your selection.`);
+      }
+      return prev.filter((s) => !payload.bookedSeats.includes(s));
+    });
+  }, []);
+
+  useShowSeats(showId, handleSeatUpdate);
+
   const toggleSeat = (label) => {
+    setNotice('');
     setSelectedSeats((prev) =>
       prev.includes(label) ? prev.filter((s) => s !== label) : [...prev, label]
     );
@@ -64,6 +85,12 @@ const SeatSelection = () => {
       {error && (
         <div className="bg-red-900/50 border border-red-700 text-red-300 text-sm px-4 py-3 rounded-lg mb-6">
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-300 text-sm px-4 py-3 rounded-lg mb-6">
+          {notice}
         </div>
       )}
 
