@@ -3,6 +3,7 @@ import Booking from '../models/booking.model.js';
 import Show from '../models/show.model.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { BOOKING_STATUS, PAYMENT_STATUS } from '../constants/index.js';
+import { emitSeatUpdate } from '../config/socket.js';
 
 export const createBooking = async (req, res, next) => {
   const session = await mongoose.startSession();
@@ -44,6 +45,13 @@ export const createBooking = async (req, res, next) => {
     );
 
     await session.commitTransaction();
+
+    // Broadcast the new seat state to everyone viewing this show
+    emitSeatUpdate(showId, {
+      bookedSeats: show.bookedSeats,
+      availableSeats: show.availableSeats,
+      reason: 'booked',
+    });
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate({ path: 'show', populate: [{ path: 'movie', select: 'title posterUrl' }, { path: 'theater', select: 'name location' }] });
@@ -106,6 +114,16 @@ export const cancelBooking = async (req, res, next) => {
     await booking.save({ session });
 
     await session.commitTransaction();
+
+    // Broadcast the freed seats so other viewers can book them immediately
+    if (show) {
+      emitSeatUpdate(show._id, {
+        bookedSeats: show.bookedSeats,
+        availableSeats: show.availableSeats,
+        reason: 'cancelled',
+      });
+    }
+
     return successResponse(res, 'Booking cancelled and seats released', { booking });
   } catch (error) {
     await session.abortTransaction();
