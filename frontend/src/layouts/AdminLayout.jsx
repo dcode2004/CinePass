@@ -1,12 +1,18 @@
-import { Outlet, NavLink, Navigate } from 'react-router-dom';
+import { Outlet, NavLink, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Loader from '../components/Loader.jsx';
 
 const AdminLayout = () => {
-  const { isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, logout } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) return <Loader fullScreen />;
   if (!isAdmin) return <Navigate to="/" replace />;
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const linkClass = ({ isActive }) =>
     `block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -31,8 +37,15 @@ const AdminLayout = () => {
 
       {/* Content */}
       <div className="flex-1 flex flex-col">
-        <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
+        <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-white">Admin Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-sm text-gray-300 hover:text-white font-medium">View Site</Link>
+            <span className="text-sm text-gray-500 hidden sm:block">{user?.name}</span>
+            <button onClick={handleLogout} className="btn-secondary text-sm py-1.5 px-3">
+              Logout
+            </button>
+          </div>
         </header>
         <main className="flex-1 p-6 overflow-auto">
           <Outlet />
