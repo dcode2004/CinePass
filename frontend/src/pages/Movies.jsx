@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useMovies } from '../hooks/useMovies.js';
 import MovieCard from '../components/MovieCard.jsx';
 import Loader from '../components/Loader.jsx';
-import { GENRES, LANGUAGES } from '../../constants/index.js';
 
 const GENRE_LIST = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Drama', 'Fantasy', 'Horror', 'Romance', 'Sci-Fi', 'Thriller'];
 const LANG_LIST = ['English', 'Hindi', 'Tamil', 'Telugu', 'Malayalam'];
